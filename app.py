@@ -50,6 +50,17 @@ st.markdown("""
         box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         border: 1px solid #e9ecef;
         text-align: center;
+        color: #212529; /* Explicit dark text for contrast */
+    }
+
+    .metric-card h2 {
+        color: #212529 !important;
+        margin: 0;
+    }
+
+    .metric-card p {
+        color: #6c757d !important;
+        margin-bottom: 2px;
     }
 
     .prediction-container {
@@ -142,24 +153,26 @@ with tab1:
 
             st.markdown("### Market Insight")
             # Square Footage vs Price Scatter with current prediction point
-            fig = px.scatter(df.sample(200), x='Square_Footage', y='House_Price', opacity=0.4,
+            fig = px.scatter(df, x='Square_Footage', y='House_Price', opacity=0.6,
                              labels={'Square_Footage': 'Living Area (sq ft)', 'House_Price': 'Price ($)'},
                              title="Trend Analysis: Size vs Price")
             
             fig.add_trace(go.Scatter(x=[sq_ft], y=[prediction], mode='markers',
-                                     marker=dict(color='orange', size=15, symbol='star', line=dict(color='white', width=2)),
+                                     marker=dict(color='#ff4b4b', size=18, symbol='star', line=dict(color='white', width=2)),
                                      name='Your Estimate'))
             
+            fig.update_traces(marker=dict(size=8))
             fig.update_layout(template='plotly_white', margin=dict(l=0, r=0, t=40, b=0))
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.info("👈 Set your property features in the sidebar and click **Predict Output** to see the valuation.")
             
             # Show a generic market trend if no prediction yet
-            fig = px.scatter(df.sample(200), x='Square_Footage', y='House_Price', opacity=0.4,
-                             trendline="ols", trendline_color_override="red",
+            fig = px.scatter(df, x='Square_Footage', y='House_Price', opacity=0.4,
+                             trendline="ols", trendline_color_override="#ff4b4b",
                              labels={'Square_Footage': 'Living Area (sq ft)', 'House_Price': 'Price ($)'},
                              title="Overall Market Trend (Size vs Price)")
+            fig.update_traces(marker=dict(size=6))
             fig.update_layout(template='plotly_white', margin=dict(l=0, r=0, t=40, b=0))
             st.plotly_chart(fig, use_container_width=True)
 
@@ -167,23 +180,23 @@ with tab1:
         st.markdown("### Property Specs")
         st.markdown(f"""
         <div class="metric-card">
-            <p style="color: #6c757d; margin-bottom: 2px;">Living Space</p>
-            <h2 style="margin: 0;">{sq_ft:,} <span style="font-size: 1rem; font-weight: 300;">sq ft</span></h2>
+            <p>Living Space</p>
+            <h2>{sq_ft:,} <span style="font-size: 1rem; font-weight: 300;">sq ft</span></h2>
         </div>
         <br>
         <div class="metric-card">
-            <p style="color: #6c757d; margin-bottom: 2px;">Configuration</p>
-            <h2 style="margin: 0;">{bedrooms} <span style="font-size: 1rem; font-weight: 300;">Bed | </span>{bathrooms} <span style="font-size: 1rem; font-weight: 300;">Bath</span></h2>
+            <p>Configuration</p>
+            <h2>{bedrooms} <span style="font-size: 1rem; font-weight: 300;">Bed | </span>{bathrooms} <span style="font-size: 1rem; font-weight: 300;">Bath</span></h2>
         </div>
         <br>
         <div class="metric-card">
-            <p style="color: #6c757d; margin-bottom: 2px;">Built Year</p>
-            <h2 style="margin: 0;">{year_built}</h2>
+            <p>Built Year</p>
+            <h2>{year_built}</h2>
         </div>
         <br>
         <div class="metric-card">
-            <p style="color: #6c757d; margin-bottom: 2px;">Land Area</p>
-            <h2 style="margin: 0;">{lot_size} <span style="font-size: 1rem; font-weight: 300;">Acres</span></h2>
+            <p>Land Area</p>
+            <h2>{lot_size} <span style="font-size: 1rem; font-weight: 300;">Acres</span></h2>
         </div>
         """, unsafe_allow_html=True)
         
@@ -192,6 +205,11 @@ with tab1:
 with tab2:
     st.title("📊 Market Analytics")
     st.markdown("### Strategic Data Insights for Property Valuation")
+    
+    with st.expander("🔍 View Raw Training Data"):
+        st.write("Below is a sample of the historical property data used to train the Elite Estates model.")
+        st.dataframe(df.head(10), use_container_width=True)
+    
     st.markdown("---")
     
     row1_col1, row1_col2 = st.columns(2)
