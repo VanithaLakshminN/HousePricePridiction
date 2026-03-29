@@ -86,6 +86,13 @@ except Exception as e:
     st.error(f"Error loading model: {e}. Please run the training script first.")
     st.stop()
 
+# Load dataset for visualization
+@st.cache_data
+def load_data():
+    return pd.read_csv('house_price_regression_dataset.csv').dropna()
+
+df = load_data()
+
 # Sidebar for inputs
 st.sidebar.image("https://img.icons8.com/clouds/200/000000/home.png", width=100)
 st.sidebar.title("Property Features")
@@ -108,81 +115,137 @@ garage_size = st.sidebar.radio("Garage Size (Cars)", options=[0, 1, 2], index=1,
 neighborhood_quality_options = list(range(1, 11))
 neighborhood_quality = st.sidebar.selectbox("Neighborhood Quality Score", options=neighborhood_quality_options, index=6)
 
-# Main Page Layout
-col1, col2 = st.columns([2, 1])
+predict_btn = st.sidebar.button("Predict Output")
 
-with col1:
-    st.title("🏠 Elite Estates Predictor")
-    st.markdown("### Precision Market Valuation for Modern Homes")
-    
-    # Predict Button
-    predict_btn = st.sidebar.button("Predict Output")
-    
-    # Feature summary container
+# Main Page Layout with Tabs
+tab1, tab2 = st.tabs(["🏠 Home Valuator", "📊 Market Analytics"])
+
+with tab1:
+    col1, col2 = st.columns([2, 1])
+
+    with col1:
+        st.title("🏠 Elite Estates Predictor")
+        st.markdown("### Precision Market Valuation for Modern Homes")
+        st.markdown("---")
+        
+        if predict_btn:
+            features = np.array([[sq_ft, bedrooms, bathrooms, year_built, lot_size, garage_size, neighborhood_quality]])
+            features_scaled = scaler.transform(features)
+            prediction = model.predict(features_scaled)[0]
+            
+            st.markdown(f"""
+                <div class="prediction-container">
+                    <p style="font-size: 1.2rem; opacity: 0.9; margin-bottom: 5px;">Estimated Market Value</p>
+                    <h1 style="font-size: 3.5rem; color: white; margin: 0;">${prediction:,.2f}</h1>
+                </div>
+            """, unsafe_allow_html=True)
+
+            st.markdown("### Market Insight")
+            # Square Footage vs Price Scatter with current prediction point
+            fig = px.scatter(df.sample(200), x='Square_Footage', y='House_Price', opacity=0.4,
+                             labels={'Square_Footage': 'Living Area (sq ft)', 'House_Price': 'Price ($)'},
+                             title="Trend Analysis: Size vs Price")
+            
+            fig.add_trace(go.Scatter(x=[sq_ft], y=[prediction], mode='markers',
+                                     marker=dict(color='orange', size=15, symbol='star', line=dict(color='white', width=2)),
+                                     name='Your Estimate'))
+            
+            fig.update_layout(template='plotly_white', margin=dict(l=0, r=0, t=40, b=0))
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("👈 Set your property features in the sidebar and click **Predict Output** to see the valuation.")
+            
+            # Show a generic market trend if no prediction yet
+            fig = px.scatter(df.sample(200), x='Square_Footage', y='House_Price', opacity=0.4,
+                             trendline="ols", trendline_color_override="red",
+                             labels={'Square_Footage': 'Living Area (sq ft)', 'House_Price': 'Price ($)'},
+                             title="Overall Market Trend (Size vs Price)")
+            fig.update_layout(template='plotly_white', margin=dict(l=0, r=0, t=40, b=0))
+            st.plotly_chart(fig, use_container_width=True)
+
+    with col2:
+        st.markdown("### Property Specs")
+        st.markdown(f"""
+        <div class="metric-card">
+            <p style="color: #6c757d; margin-bottom: 2px;">Living Space</p>
+            <h2 style="margin: 0;">{sq_ft:,} <span style="font-size: 1rem; font-weight: 300;">sq ft</span></h2>
+        </div>
+        <br>
+        <div class="metric-card">
+            <p style="color: #6c757d; margin-bottom: 2px;">Configuration</p>
+            <h2 style="margin: 0;">{bedrooms} <span style="font-size: 1rem; font-weight: 300;">Bed | </span>{bathrooms} <span style="font-size: 1rem; font-weight: 300;">Bath</span></h2>
+        </div>
+        <br>
+        <div class="metric-card">
+            <p style="color: #6c757d; margin-bottom: 2px;">Built Year</p>
+            <h2 style="margin: 0;">{year_built}</h2>
+        </div>
+        <br>
+        <div class="metric-card">
+            <p style="color: #6c757d; margin-bottom: 2px;">Land Area</p>
+            <h2 style="margin: 0;">{lot_size} <span style="font-size: 1rem; font-weight: 300;">Acres</span></h2>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.info("💡 Pro Tip: Neighborhood quality and square footage are the strongest predictors in this model.")
+
+with tab2:
+    st.title("📊 Market Analytics")
+    st.markdown("### Strategic Data Insights for Property Valuation")
     st.markdown("---")
     
-    if predict_btn:
-        # Real-time Prediction
-        features = np.array([[sq_ft, bedrooms, bathrooms, year_built, lot_size, garage_size, neighborhood_quality]])
-        features_scaled = scaler.transform(features)
-        prediction = model.predict(features_scaled)[0]
-        
-        st.markdown(f"""
-            <div class="prediction-container">
-                <p style="font-size: 1.2rem; opacity: 0.9; margin-bottom: 5px;">Estimated Market Value</p>
-                <h1 style="font-size: 3.5rem; color: white; margin: 0;">${prediction:,.2f}</h1>
-            </div>
-        """, unsafe_allow_html=True)
-
-        # Visualization: Prediction Breakdown or Comparison
-        st.markdown("### Market Insight")
-        
-        # Load dataset for visualization (optional, but nice)
-        @st.cache_data
-        def load_data():
-            return pd.read_csv('house_price_regression_dataset.csv')
-        
-        df = load_data()
-        
-        # Square Footage vs Price Scatter with current prediction point
-        fig = px.scatter(df.sample(200), x='Square_Footage', y='House_Price', opacity=0.4,
-                         labels={'Square_Footage': 'Living Area (sq ft)', 'House_Price': 'Price ($)'},
-                         title="Trend Analysis: Size vs Price")
-        
-        fig.add_trace(go.Scatter(x=[sq_ft], y=[prediction], mode='markers',
-                                 marker=dict(color='orange', size=15, symbol='star', line=dict(color='white', width=2)),
-                                 name='Your Estimate'))
-        
-        fig.update_layout(template='plotly_white', margin=dict(l=0, r=0, t=40, b=0))
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("👈 Set your property features in the sidebar and click **Predict Output** to see the valuation.")
-
-with col2:
-    st.markdown("### Property Specs")
-    st.markdown(f"""
-    <div class="metric-card">
-        <p style="color: #6c757d; margin-bottom: 2px;">Living Space</p>
-        <h2 style="margin: 0;">{sq_ft:,} <span style="font-size: 1rem; font-weight: 300;">sq ft</span></h2>
-    </div>
-    <br>
-    <div class="metric-card">
-        <p style="color: #6c757d; margin-bottom: 2px;">Configuration</p>
-        <h2 style="margin: 0;">{bedrooms} <span style="font-size: 1rem; font-weight: 300;">Bed | </span>{bathrooms} <span style="font-size: 1rem; font-weight: 300;">Bath</span></h2>
-    </div>
-    <br>
-    <div class="metric-card">
-        <p style="color: #6c757d; margin-bottom: 2px;">Built Year</p>
-        <h2 style="margin: 0;">{year_built}</h2>
-    </div>
-    <br>
-    <div class="metric-card">
-        <p style="color: #6c757d; margin-bottom: 2px;">Land Area</p>
-        <h2 style="margin: 0;">{lot_size} <span style="font-size: 1rem; font-weight: 300;">Acres</span></h2>
-    </div>
-    """, unsafe_allow_html=True)
+    row1_col1, row1_col2 = st.columns(2)
     
-    st.info("💡 Pro Tip: Neighborhood quality and square footage are the strongest predictors in this model.")
+    with row1_col1:
+        # Correlation Heatmap
+        corr = df.corr()
+        fig_corr = px.imshow(corr, text_auto=True, aspect="auto",
+                             color_continuous_scale='RdBu_r', origin='lower',
+                             title="Feature Correlation Matrix")
+        fig_corr.update_layout(template='plotly_white')
+        st.write("#### 1. Correlation Matrix")
+        st.plotly_chart(fig_corr, use_container_width=True)
+        st.caption("A heatmap showing how different property features relate to each other and the final price.")
+
+    with row1_col2:
+        # House Price Distribution
+        fig_dist = px.histogram(df, x="House_Price", nbins=30, marginal="box",
+                                color_discrete_sequence=['#007bff'],
+                                title="Market Price Distribution")
+        fig_dist.update_layout(template='plotly_white')
+        st.write("#### 2. Price Distribution")
+        st.plotly_chart(fig_dist, use_container_width=True)
+        st.caption("The spread of property prices across the entire market sample.")
+
+    st.markdown("---")
+    
+    row2_col1, row2_col2 = st.columns(2)
+    
+    with row2_col1:
+        # Neighborhood Quality Impact
+        fig_neighborhood = px.box(df, x="Neighborhood_Quality", y="House_Price",
+                                 color="Neighborhood_Quality",
+                                 title="Neighborhood Quality vs Price Impact")
+        fig_neighborhood.update_layout(template='plotly_white')
+        st.write("#### 3. Neighborhood Appraisal")
+        st.plotly_chart(fig_neighborhood, use_container_width=True)
+        st.caption("Understanding how local quality ratings influence property valuation.")
+
+    with row2_col2:
+        # Feature Importance (Proxy via Coefficients)
+        # Scale values roughly to show relative importance
+        coef = model.coef_
+        features_names = ['Size', 'Beds', 'Baths', 'Age', 'Lot', 'Garage', 'Quality']
+        importance_df = pd.DataFrame({'Feature': features_names, 'Importance': np.abs(coef)})
+        importance_df = importance_df.sort_values(by='Importance', ascending=False)
+        
+        fig_import = px.bar(importance_df, x='Importance', y='Feature', orientation='h',
+                            color='Importance', color_continuous_scale='Blues',
+                            title="Model Sensitivity Analysis (Feature Importance)")
+        fig_import.update_layout(template='plotly_white')
+        st.write("#### 4. Feature Importance")
+        st.plotly_chart(fig_import, use_container_width=True)
+        st.caption("Shows which factors have the most significant weight in the prediction formula.")
 
 # Footer
 st.markdown("---")

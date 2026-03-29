@@ -52,6 +52,14 @@ streamlit run app.py
 ```
 The app will open in your default browser at `http://localhost:8501`.
 
+## 🌐 Deployment (Streamlit Cloud)
+
+Follow these steps to deploy your app for free:
+1. **GitHub**: Push your latest changes (Completed). 
+2. **Connect**: Log in to [Streamlit Cloud](https://share.streamlit.io/) with your GitHub.
+3. **Deploy**: Select your repository and `app.py` as the main entry point.
+4. **Live**: Your app will be accessible via a public URL!
+
 ## 🧠 Model & Performance
 
 The core prediction engine is powered by a **Linear Regression** model, selected for its exceptional performance on this dataset.
